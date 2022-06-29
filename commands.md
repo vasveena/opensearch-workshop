@@ -1144,8 +1144,8 @@ curl -XPUT -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgw
              "user" : {"type": "text"},
              "tweet_tstamp" : { "type" : "date", "format" :  "yyyy-MM-dd HH:mm:ss"},
              "tweet" : {"type": "text"},
-             "polarity" : {"type" : "double"},
-             "subjectivity" : {"type" : "double"},
+             "polarity" : {"type" : "float"},
+             "subjectivity" : {"type" : "float"},
              "sentiment" : {"type": "text"},
              "modified_tstamp" : { "type" : "date", "format" :  "yyyy-MM-dd HH:mm:ss"}
             }
@@ -1161,8 +1161,8 @@ CREATE EXTERNAL TABLE data_sentiment_os (`tweet_id` string,
 `user_name` string,
 `tweet_tstamp` string,
 `message` string,
-`polarity` double,
-`subjectivity` double,
+`polarity` float,
+`subjectivity` float,
 `sentiment` string,
 `modified_tstamp` string
  )
