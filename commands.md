@@ -310,9 +310,9 @@ Output:
 
 3. Run the following commands on ALL the OSS Elasticsearch nodes - one by one. DO NOT run these commands on more than one node simultaneously.
 
+```
 # Download latest minor version from OSS Elasticsearch 6.8.x and verify checksum
 
-```
 cd ~
 
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-oss-6.8.23.tar.gz
@@ -492,7 +492,7 @@ In Amazon OpenSearch Management Console, create your Amazon OpenSearch 1.2 domai
 Using local port forwarding, check if you are able to access your domain. For this, you need to create an EC2 instance in a public subnet with same network settings. Or use the ES client instance created earlier.
 
 ```
-ssh -i ~/awspsaeast.pem ec2-user@ec2-3-83-111-79.compute-1.amazonaws.com -N -L 9200:vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443
+ssh -i ~/awspsaeast.pem ec2-user@ec2-3-83-111-79.compute-1.amazonaws.com -N -L 9200:vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443
 ```
 
 Access the cluster and dashboards in browser.
@@ -598,7 +598,7 @@ Modify the trust policy for this role to trust OpenSearch service.
             "Action": "es:ESHttpPut",
             "Resource": [
                 "arn:aws:es:us-east-1:413094830157:domain/opensearch-domain-2/*",
-                "arn:aws:us-east-1:region:413094830157:domain/opensearch-domain-22/*"
+                "arn:aws:us-east-1:region:413094830157:domain/opensearch-domain-66/*"
             ]
         }
     ]
@@ -621,7 +621,7 @@ We will use boto3 client to create S3 index. You cannot use cURL or even the das
 If we do not sign our requests, we will get the below error.
 
 ```
-curl -XPOST -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/_snapshot/s3-repository/snapshot-2/_restore'
+curl -XPOST -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/_snapshot/s3-repository/snapshot-2/_restore'
 {"error":{"root_cause":[{"type":"security_exception","reason":"no permissions for [] and User [name=admin, backend_roles=[], requestedTenant=null]"}],"type":"security_exception","reason":"no permissions for [] and User [name=admin, backend_roles=[], requestedTenant=null]"},"status":403}
 
 ```
@@ -645,7 +645,7 @@ import boto3
 import requests
 from requests_aws4auth import AWS4Auth
 
-host = 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/' # include https:// and trailing /
+host = 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/' # include https:// and trailing /
 region = 'us-east-1'
 service = 'es'
 awsauth = AWS4Auth(os.environ.get("AWS_ACCESS_KEY_ID"), os.environ.get("AWS_SECRET_ACCESS_KEY"), region, service)
@@ -675,7 +675,7 @@ print(r.text)
 
 It should return 200 OK. You should be able to see the snapshot we took from OSS cluster since both domains refer to the same S3 bucket.
 
-curl -XGET -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/_snapshot/s3-repository/snapshot_2/'
+curl -XGET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/_snapshot/s3-repository/snapshot_2/'
 
 *Step 9 - Restore from snapshot* <br>
 *--------------------------------* <br>
@@ -690,7 +690,7 @@ import boto3
 import requests
 from requests_aws4auth import AWS4Auth
 
-host = 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/' # include https:// and trailing /
+host = 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/' # include https:// and trailing /
 region = 'us-east-1'
 service = 'es'
 awsauth = AWS4Auth(os.environ.get("AWS_ACCESS_KEY_ID"), os.environ.get("AWS_SECRET_ACCESS_KEY"), region, service)
@@ -719,7 +719,7 @@ Verify the count of documents between source and destination
 
 ```
 curl -X GET 'ip-80-0-24-8.ec2.internal:9200/data_sentiment-6/_count' -k
-curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/data_sentiment-6/_count' -k
+curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment-6/_count' -k
 ```
 
 *Final Step - Upgrade Clients* <br>
@@ -828,7 +828,7 @@ Verify that the counts are increasing (after buffer timeout)
 
 ```
 curl -X GET 'ip-80-0-24-8.ec2.internal:9200/data_sentiment-6/_count' -k
-curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/data_sentiment-6/_count' -k
+curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment-6/_count' -k
 
 ```
 
@@ -852,7 +852,7 @@ region = 'us-east-1'
 service = 'es'
 awsauth = AWS4Auth(os.environ.get("AWS_ACCESS_KEY_ID"), os.environ.get("AWS_SECRET_ACCESS_KEY"), region, service)
 
-host = 'vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com'
+host = 'vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com'
 
 es = Elasticsearch(
     hosts = [{'host': host, 'port': 443}],
@@ -914,7 +914,7 @@ if __name__ == '__main__':
 Verify that the counts are increasing
 
 ```
-curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/data_sentiment-6/_count' -k
+curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment-6/_count' -k
 
 ```
 
@@ -924,7 +924,7 @@ curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6z
 1. Create an index in Open-distro Elasticsearch 5.6
 
 ```
-curl -XDELETE 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/data_sentiment'
+curl -XDELETE 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment'
 
 curl -XPUT 'https://vpc-open-distro-es-5-6-lgpve2ddaggepo5jk4ozxszlja.us-east-1.es.amazonaws.com/data_sentiment' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k -H 'Content-Type: application/json' -d '
         {
@@ -1079,9 +1079,9 @@ select * from data_sentiment_solr limit 5;
 5. Create an index in Amazon Opensearch called “data_sentiment_solr” with below schema. You can add extra fields or remove any fields you want.
 
 ```
-curl -XDELETE -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/data_sentiment_solr'
+curl -XDELETE -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment_solr'
 
-curl -XPUT -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/data_sentiment_solr' -k -H 'Content-Type: application/json' -d '
+curl -XPUT -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment_solr' -k -H 'Content-Type: application/json' -d '
         {
           "settings": {
             "number_of_shards": 2,
@@ -1117,7 +1117,7 @@ CREATE EXTERNAL TABLE data_sentiment_os (`tweet_id` string,
  )
 STORED BY 'org.elasticsearch.hadoop.hive.EsStorageHandler'
 TBLPROPERTIES(
-    'es.nodes' = 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com',
+    'es.nodes' = 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com',
     'es.port' = '443',
     'es.net.http.auth.user' = 'admin',
     'es.net.http.auth.pass' = 'Test123$',
@@ -1146,7 +1146,7 @@ sar -n DEV 1 3
 curl -s --negotiate -u: 'ec2-18-212-174-25.compute-1.amazonaws.com:8983/solr/data_sentiment/query?q=*:*&rows=0' | jq '.response | .numFound'
 390
 
-curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-22-ebm4cbbjqenq6zbeo6omqlv6hi.us-east-1.es.amazonaws.com:443/data_sentiment_solr/_count' -k
+curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment_solr/_count' -k
 {"count":390,"_shards":{"total":2,"successful":2,"skipped":0,"failed":0}}
 ```
 
