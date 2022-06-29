@@ -979,6 +979,52 @@ curl -X GET 'https://vpc-open-distro-es-5-6-lgpve2ddaggepo5jk4ozxszlja.us-east-1
 **Apache Solr to Amazon Opensearch** <br>
 **/////////////////////////////////** <br>
 
+*Step 0 - Install SolrCloud on EC2*<br>
+*-------------------------------------*<br>
+
+Create 3 X EC2 instances and install Apache Solr on them.
+
+```
+sudo yum install java-11-amazon-corretto -y
+java -version
+
+sudo su
+cd ~
+wget http://archive.apache.org/dist/lucene/solr/8.6.2/solr-8.6.2.tgz
+wget https://archive.apache.org/dist/zookeeper/zookeeper-3.5.7/apache-zookeeper-3.5.7-bin.tar.gz
+
+tar xfvz solr*.tgz
+tar xfvz apache-zookeeper-*.tar.gz
+
+cd solr-*/bin
+./install_solr_service.sh /root/solr*.tgz -n
+
+sed -i "s|#SOLR_HOST.*|SOLR_HOST=`curl -s http://169.254.169.254/latest/meta-data/public-hostname`|g" /etc/default/solr.in.sh
+
+# Replace with your EC2 instances public DNS
+sed -i 's|#ZK_HOST.*|ZK_HOST="ec2-18-212-174-25.compute-1.amazonaws.com:2181,ec2-54-91-128-241.compute-1.amazonaws.com:2181,ec2-54-81-141-240.compute-1.amazonaws.com:2181"|g' /etc/default/solr.in.sh
+
+
+mv /root/apache-zookeeper-*-bin /opt/zookeeper
+cd /opt/zookeeper
+mkdir /opt/zookeeper/data
+
+# Change to 2 and 3 for solr-node-2 and solr-node-3 respectively
+echo "1" > /opt/zookeeper/data/myid
+
+cp /opt/zookeeper/conf/zoo_sample.cfg /opt/zookeeper/conf/zoo.cfg
+sed -i 's|#autopurge|autopurge|g' /opt/zookeeper/conf/zoo.cfg
+sed -i 's|dataDir.*|dataDir=/opt/zookeeper/data|g' /opt/zookeeper/conf/zoo.cfg
+echo "server.1=ec2-18-212-174-25.compute-1.amazonaws.com:2888:3888" >> /opt/zookeeper/conf/zoo.cfg
+echo "server.2=ec2-54-91-128-241.compute-1.amazonaws.com:2888:3888" >> /opt/zookeeper/conf/zoo.cfg
+echo "server.3=ec2-54-81-141-240.compute-1.amazonaws.com:2888:3888" >> /opt/zookeeper/conf/zoo.cfg
+
+cd /opt/zookeeper/bin
+bash zkServer.sh start
+
+service solr start
+```
+
 *Step 1 - Setup Solr Server and Client* <br>
 *-----------------------------* <br>
 
@@ -990,11 +1036,13 @@ pip3 install pysolr
 
 ```
 
-3. Create a Solr core
+3. Create a Solr core on one of the Solr EC2 instances
 
 ```
-bin/solr create -c data_sentiment -force
-bin/solr stop -all
+sudo su
+/opt/solr-8.6.2/bin/solr delete -c data_sentiment
+/opt/solr-8.6.2/bin/solr create -c data_sentiment -force
+/opt/solr-8.6.2/bin/solr stop -all
 service solr start
 
 ```
@@ -1002,7 +1050,7 @@ service solr start
 4. Go to Solr UI and select the core that was created. Select schema. We are going to modify the managed schema and add twitter columns using “Add Field”. Add 5 following fields with field type. Leave other stuff defaulted.
 
 ```
-    timestamp: pdate
+    tweet_tstamp: string
     user_name: string
     polarity: pdouble
     subjectivity: pdouble
@@ -1025,14 +1073,15 @@ sudo yum install -y jq
 curl -s --negotiate -u: 'ec2-18-212-174-25.compute-1.amazonaws.com:8983/solr/data_sentiment/query?q=*:*&rows=0' | jq '.response | .numFound'
 ```
 
-8. To delete all records in a cores
+8. To delete all records in a core
 
 ```
+# For reference. Do not run this.
 {'delete': {'query': '*:*'}}
 ```
 
-*Step 2 - Start migration process to Amazon Opensearch using Apache Hive (distributed)*
-*----------------------------------------------------------------------------*
+*Step 2 - Start migration process to Amazon Opensearch using Apache Hive (distributed)*<br>
+*----------------------------------------------------------------------------*<br>
 
 1. Launch an EMR 6.6 cluster with 3 x r4.2xlarge nodes and Hive installed
 
@@ -1050,6 +1099,8 @@ sudo chmod 777 /usr/lib/hive/auxlib/solr-hive-serde-4.0.0.7.2.15.0-147.jar
 sudo chmod 777 /usr/lib/hive/auxlib/elasticsearch-hadoop-7.10.3-SNAPSHOT.jar
 sudo chmod 777 /usr/lib/hive/auxlib/commons-httpclient-3.0.jar
 
+ls -l /usr/lib/hive/auxlib/
+
 ```
 
 3. Login to Hive CLI and create a Hive table for Solr core data_sentiment
@@ -1065,7 +1116,7 @@ CREATE EXTERNAL TABLE data_sentiment_solr (`id` string,
  )
 ROW FORMAT DELIMITED lines terminated by '\n'
 STORED BY 'com.lucidworks.hadoop.hive.LWStorageHandler'
-TBLPROPERTIES('solr.server.url' = 'http://ec2-54-91-128-241.compute-1.amazonaws.com:8983/solr',
+TBLPROPERTIES('solr.server.url' = 'http://ec2-18-212-174-25.compute-1.amazonaws.com:8983/solr',
               'solr.collection' = 'data_sentiment',
               'solr.query' = '*:*');
 ```
@@ -1132,11 +1183,17 @@ TBLPROPERTIES(
 
 8. Try to insert test data  (optional)
 
+```
 insert into table data_sentiment_os values ('0','test','2022-06-28 01:04:55','test from hive','0.0','0.0','neutral','2022-06-28 01:04:55')
+```
 
 9. Now perform insert from Solr Hive table into Amazon Opensearch Hive table
 
+```
+
 insert into table data_sentiment_os (tweet_id, tweet_tstamp, user_name, message, polarity, subjectivity, sentiment, modified_tstamp) select id, tweet_tstamp, user_name, message, polarity, subjectivity, sentiment, from_unixtime(unix_timestamp()) from data_sentiment_solr;
+
+```
 
 10. Once job finishes, verify the count between Solr source and Amazon Opensearch destination
 
@@ -1146,12 +1203,12 @@ sar -n DEV 1 3
 curl -s --negotiate -u: 'ec2-18-212-174-25.compute-1.amazonaws.com:8983/solr/data_sentiment/query?q=*:*&rows=0' | jq '.response | .numFound'
 390
 
-curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment_solr/_count' -k
+curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment_solr/_count?pretty' -k
 {"count":390,"_shards":{"total":2,"successful":2,"skipped":0,"failed":0}}
 ```
 
-*Final Step - Upgrade Clients*
-*------------------------------*
+*Final Step - Upgrade Clients*<br>
+*------------------------------*<br>
 
 Write client -> Apache Solr (sync) -> Amazon Kinesis Firehose (async) -> Amazon OpenSearch
 
