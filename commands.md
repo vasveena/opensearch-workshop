@@ -926,7 +926,9 @@ curl -X GET -u 'admin:Test123$' 'https://vpc-opensearch-domain-66-2cojbcwgonrbsg
 ```
 curl -XDELETE 'https://vpc-opensearch-domain-66-2cojbcwgonrbsgwadq524hrgoi.us-east-1.es.amazonaws.com:443/data_sentiment'
 
-curl -XPUT 'https://vpc-open-distro-es-5-6-lgpve2ddaggepo5jk4ozxszlja.us-east-1.es.amazonaws.com/data_sentiment' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k -H 'Content-Type: application/json' -d '
+curl -XDELETE 'https://vpc-open-distro-es-5-6-lgpve2ddaggepo5jk4ozxszlja.us-east-1.es.amazonaws.com:443/data_sentiment'
+
+curl -XPUT 'https://vpc-opensearch-domain-5-6-024-xqjrqtv6ffgcbntknejbcazmha.us-east-1.es.amazonaws.com/data_sentiment' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k -H 'Content-Type: application/json' -d '
         {
           "settings": {
             "number_of_shards": 2,
@@ -947,6 +949,27 @@ curl -XPUT 'https://vpc-open-distro-es-5-6-lgpve2ddaggepo5jk4ozxszlja.us-east-1.
          }
        ';
 
+curl -XPUT 'https://vpc-opensearch-domain-5-6-024-xqjrqtv6ffgcbntknejbcazmha.us-east-1.es.amazonaws.com/data_sentiment' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k -H 'Content-Type: application/json' -d '
+{
+    "settings": {
+                "number_of_shards": 2,
+                "number_of_replicas": 2
+              },
+    "mappings" : {
+                 "_default_" : {
+                  "properties" : {
+                    "user" : {"type": "string"},
+                    "timestamp" : { "type" : "date", "format" :  "yyyy-MM-dd HH:mm:ss"},
+                    "tweet" : {"type": "string"},
+                    "polarity" : {"type" : "double"},
+                    "subjectivity" : {"type" : "double"},
+                    "sentiment" : {"type": "string"}
+                   }
+                  }
+                 }
+                }
+    ';
+
 ```
 
 Run ingestion client for indexing documents into Amazon Elasticsearch 5.6
@@ -960,7 +983,10 @@ Get count during writes
 
 ```
 
+curl -X GET 'https://vpc-opensearch-domain-5-6-024-xqjrqtv6ffgcbntknejbcazmha.us-east-1.es.amazonaws.com/data_sentiment/_count' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k
+
 curl -X GET 'https://vpc-open-distro-es-5-6-lgpve2ddaggepo5jk4ozxszlja.us-east-1.es.amazonaws.com/data_sentiment/_count' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k
+
 ```
 
 2. Upgrade in UI to Amazon Elasticsearch 6.8 and perform write during upgrade
@@ -973,7 +999,10 @@ python3 es-5.6.py
 Get count during writes
 
 ```
+curl -X GET 'https://vpc-opensearch-domain-5-6-024-xqjrqtv6ffgcbntknejbcazmha.us-east-1.es.amazonaws.com/data_sentiment/_count' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k
+
 curl -X GET 'https://vpc-open-distro-es-5-6-lgpve2ddaggepo5jk4ozxszlja.us-east-1.es.amazonaws.com/data_sentiment/_count' --user $AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY --aws-sigv4 "aws:amz:us-east-1:es" -k
+
 ```
 
 **Apache Solr to Amazon Opensearch** <br>
